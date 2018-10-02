@@ -5,11 +5,11 @@ import matplotlib.animation
 # DEFINIR:
 height = 80
 width = 200
-viscosity = 0.02  # viscosidade
+viscosity = 0.1  # viscosidade
 omega = 1 / (3 * viscosity + 0.5)  # parametro de relaxamento
 u0 = 0.04  # velocidade incial
 
-u = np.zeros((2,height,width))
+u = np.zeros((2, height, width))
 fin = np.zeros((9, height, width))
 
 # inicialização da densidade, dado u0
@@ -29,14 +29,19 @@ fin[7, :, :] = 1. / 36. * (np.ones(
 fin[8, :, :] = 1. / 36. * (np.ones(
     (height, width)) - 3 * u0 + 4.5 * u0**2 - 1.5 * u0**2)
 rho = np.sum(fin, axis=0)  # densidade macroscopica
-u[0,:,:] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] - fin[7, :, :]
-      - fin[8, :, :]) / rho  # velocidade macroscopica em X
-u[1,:,:] = (fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] - fin[6, :, :]
-      - fin[8, :, :]) / rho  # velocidade macroscopica em Y
+
+u[0, :, :] = (
+    fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] - fin[7, :, :] -
+    fin[8, :, :]) / rho  # velocidade macroscopica em X
+u[1, :, :] = (
+    fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] - fin[6, :, :] -
+    fin[8, :, :]) / rho  # velocidade macroscopica em Y
 
 # obstáculo / objeto
 obj = np.zeros((height, width), bool)
-obj[5:30, 20] = True
+obj[32:48, 20:50] = True
+obj[0, :] = True
+obj[-1, :] = True
 objN = np.roll(obj, 1, axis=0)
 objS = np.roll(obj, -1, axis=0)
 objE = np.roll(obj, 1, axis=1)
@@ -76,34 +81,32 @@ def streaming():
 # collision step
 def collision():
     global rho, u, fin
-    rho = fin[0, :, :] + fin[1, :, :] + fin[2, :, :] + fin[3, :, :] + fin[
-        4, :, :] + fin[5, :, :] + fin[6, :, :] + fin[7, :, :] + fin[8, :, :]
-    u[0,:,:] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] -
-          fin[7, :, :] - fin[8, :, :]) / rho
-    u[1,:,:] = (fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] -
-          fin[6, :, :] - fin[8, :, :]) / rho
+    rho = np.sum(fin, axis=0)
+    u[0, :, :] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] -
+                  fin[7, :, :] - fin[8, :, :]) / rho
+    u[1, :, :] = (fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] -
+                  fin[6, :, :] - fin[8, :, :]) / rho
 
-
-    u2 = u[0,:,:]**2 + u[1,:,:]**2
+    u2 = u[0, :, :]**2 + u[1, :, :]**2
     omu215 = 1 - 1.5 * u2
-    uxuy = u[0,:,:] * u[1,:,:]
+    uxuy = u[0, :, :] * u[1, :, :]
     fin[0, :, :] = (1 - omega) * fin[0, :, :] + omega * 4. / 9. * rho * omu215
     fin[1, :, :] = (1 - omega) * fin[1, :, :] + omega * 1. / 9. * rho * (
-        omu215 + 3 * u[1,:,:] + 4.5 * u[1,:,:]**2)
+        omu215 + 3 * u[1, :, :] + 4.5 * u[1, :, :]**2)
     fin[2, :, :] = (1 - omega) * fin[2, :, :] + omega * 1. / 9. * rho * (
-        omu215 - 3 * u[1,:,:] + 4.5 * u[1,:,:]**2)
+        omu215 - 3 * u[1, :, :] + 4.5 * u[1, :, :]**2)
     fin[3, :, :] = (1 - omega) * fin[3, :, :] + omega * 1. / 9. * rho * (
-        omu215 + 3 * u[0,:,:] + 4.5 * u[0,:,:]**2)
+        omu215 + 3 * u[0, :, :] + 4.5 * u[0, :, :]**2)
     fin[4, :, :] = (1 - omega) * fin[4, :, :] + omega * 1. / 9. * rho * (
-        omu215 - 3 * u[0,:,:] + 4.5 * u[0,:,:]**2)
+        omu215 - 3 * u[0, :, :] + 4.5 * u[0, :, :]**2)
     fin[5, :, :] = (1 - omega) * fin[5, :, :] + omega * 1. / 36. * rho * (
-        omu215 + 3 * (u[0,:,:] + u[1,:,:]) + 4.5 * (u2 + 2 * uxuy))
+        omu215 + 3 * (u[0, :, :] + u[1, :, :]) + 4.5 * (u2 + 2 * uxuy))
     fin[7, :, :] = (1 - omega) * fin[7, :, :] + omega * 1. / 36. * rho * (
-        omu215 + 3 * (-u[0,:,:] + u[1,:,:]) + 4.5 * (u2 - 2 * uxuy))
+        omu215 + 3 * (-u[0, :, :] + u[1, :, :]) + 4.5 * (u2 - 2 * uxuy))
     fin[6, :, :] = (1 - omega) * fin[6, :, :] + omega * 1. / 36. * rho * (
-        omu215 + 3 * (u[0,:,:] - u[1,:,:]) + 4.5 * (u2 - 2 * uxuy))
+        omu215 + 3 * (u[0, :, :] - u[1, :, :]) + 4.5 * (u2 - 2 * uxuy))
     fin[8, :, :] = (1 - omega) * fin[8, :, :] + omega * 1. / 36. * rho * (
-        omu215 + 3 * (-u[0,:,:] - u[1,:,:]) + 4.5 * (u2 + 2 * uxuy))
+        omu215 + 3 * (-u[0, :, :] - u[1, :, :]) + 4.5 * (u2 + 2 * uxuy))
     # fluxo no fim do quadro
     fin[3, :, :][:, 0] = 1. / 9. * (1 + 3 * u0 + 4.5 * u0**2 - 1.5 * u0**2)
     fin[4, :, :][:, 0] = 1. / 9. * (1 - 3 * u0 + 4.5 * u0**2 - 1.5 * u0**2)
@@ -122,10 +125,12 @@ def curl(ux, uy):
                     ux, 1, axis=0)
 
 
+u_plot = np.sqrt(u[0, :, :]**2 + u[1, :, :]**2)
+
 # PLOT LOOP
 theFig = plt.figure(figsize=(8, 3))
 fluidImage = plt.imshow(
-    curl(u[0,:,:], u[1,:,:]),
+    u_plot,
     origin='lower',
     norm=plt.Normalize(-.1, .1),
     cmap=plt.get_cmap('jet'),
@@ -139,10 +144,12 @@ def nextStep(arg):
     for i in range(20):  #quantos calculos vão ser feitos por passo
         streaming()
         collision()
-    fluidImage.set_array(curl(u[0,:,:], u[1,:,:]))
+    u_plot = np.sqrt(u[0, :, :]**2 + u[1, :, :]**2)
+    fluidImage.set_array(u_plot)
+
     return (fluidImage, objImage)
 
 
 animate = matplotlib.animation.FuncAnimation(
-    theFig, nextStep, interval=1, blit=True)
+    theFig, nextStep, interval=0.1, blit=True)
 plt.show()
