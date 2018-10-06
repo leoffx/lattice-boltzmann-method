@@ -8,44 +8,10 @@ width = 200
 viscosity = 0.01  # viscosidade // proporcional ao inverso de reynolds // não diminuir muito
 omega = 1 / (3 * viscosity + 0.5)  # parametro de relaxamento
 
-u0 = 0.08  # velocidade incial // não aumentar muito
+u0 = 0.08  # velocidade inicial // não aumentar muito
 
 u = np.zeros((2, height, width))
 fin = np.zeros((9, height, width))
-feq = np.zeros((9, height, width))
-
-
-def equilibrio():
-    global feq, u
-
-    rho = np.sum(fin, axis=0)
-    u[0, :, :] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] -
-                  fin[7, :, :] - fin[8, :, :]) / rho
-    u[1, :, :] = (fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] -
-                  fin[6, :, :] - fin[8, :, :]) / rho
-
-    u2 = u[0, :, :]**2 + u[1, :, :]**2
-    uxuy = u[0, :, :] * u[1, :, :]
-    um32u2 = 1 - 1.5 * (u2)  #um menos 3/2 de u**2
-
-    feq[0, :, :] = 4 / 9 * rho * (um32u2)
-    feq[1, :, :] = 1 / 9 * rho * (
-        3 * u[1, :, :] + 4.5 * u[1, :, :]**2 + um32u2)
-    feq[2, :, :] = 1 / 9 * rho * (
-        -3 * u[1, :, :] + 4.5 * u[1, :, :]**2 + um32u2)
-    feq[3, :, :] = 1 / 9 * rho * (
-        3 * u[0, :, :] + 4.5 * u[0, :, :]**2 + um32u2)
-    feq[4, :, :] = 1 / 9 * rho * (
-        -3 * u[0, :, :] + 4.5 * u[0, :, :]**2 + um32u2)
-    feq[5, :, :] = 1 / 36 * rho * (3 * (u[0, :, :] + u[1, :, :]) + 4.5 *
-                                   (u2 + 2 * uxuy) + um32u2)
-    feq[6, :, :] = 1 / 36 * rho * (3 * (u[0, :, :] - u[1, :, :]) + 4.5 *
-                                   (u2 - 2 * uxuy) + um32u2)
-    feq[7, :, :] = 1 / 36 * rho * (3 * (-u[0, :, :] + u[1, :, :]) + 4.5 *
-                                   (u2 - 2 * uxuy) + um32u2)
-    feq[8, :, :] = 1 / 36 * rho * (3 * (-u[0, :, :] - u[1, :, :]) + 4.5 *
-                                   (u2 + 2 * uxuy) + um32u2)
-
 
 # inicialização da densidade, dado u0
 fin[0, :, :] = 4. / 9. * (1 - 1.5 * u0**2)
@@ -116,9 +82,33 @@ def streaming():
 # collision step
 def collision():
     global fin
-    equilibrio()
+    rho = np.sum(fin, axis=0)
+    u[0, :, :] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] -
+                  fin[7, :, :] - fin[8, :, :]) / rho
+    u[1, :, :] = (fin[1, :, :] + fin[5, :, :] + fin[7, :, :] - fin[2, :, :] -
+                  fin[6, :, :] - fin[8, :, :]) / rho
 
-    fin = fin * (1 - omega) + feq * omega
+    u2 = u[0, :, :]**2 + u[1, :, :]**2
+    uxuy = u[0, :, :] * u[1, :, :]
+    um32u2 = 1 - 1.5 * (u2)  #um menos 3/2 de u**2
+
+    fin[0, :, :] = fin[0, :, :] * (1 - omega) + omega * 4 / 9 * rho * (um32u2)
+    fin[1, :, :] = fin[1, :, :] * (1 - omega) + omega * 1 / 9 * rho * (
+        3 * u[1, :, :] + 4.5 * u[1, :, :]**2 + um32u2)
+    fin[2, :, :] = fin[2, :, :] * (1 - omega) + omega * 1 / 9 * rho * (
+        -3 * u[1, :, :] + 4.5 * u[1, :, :]**2 + um32u2)
+    fin[3, :, :] = fin[3, :, :] * (1 - omega) + omega * 1 / 9 * rho * (
+        3 * u[0, :, :] + 4.5 * u[0, :, :]**2 + um32u2)
+    fin[4, :, :] = fin[4, :, :] * (1 - omega) + omega * 1 / 9 * rho * (
+        -3 * u[0, :, :] + 4.5 * u[0, :, :]**2 + um32u2)
+    fin[5, :, :] = fin[5, :, :] * (1 - omega) + omega * 1 / 36 * rho * (
+        3 * (u[0, :, :] + u[1, :, :]) + 4.5 * (u2 + 2 * uxuy) + um32u2)
+    fin[6, :, :] = fin[6, :, :] * (1 - omega) + omega * 1 / 36 * rho * (
+        3 * (u[0, :, :] - u[1, :, :]) + 4.5 * (u2 - 2 * uxuy) + um32u2)
+    fin[7, :, :] = fin[7, :, :] * (1 - omega) + omega * 1 / 36 * rho * (
+        3 * (-u[0, :, :] + u[1, :, :]) + 4.5 * (u2 - 2 * uxuy) + um32u2)
+    fin[8, :, :] = fin[8, :, :] * (1 - omega) + omega * 1 / 36 * rho * (
+        3 * (-u[0, :, :] - u[1, :, :]) + 4.5 * (u2 + 2 * uxuy) + um32u2)
 
     # fluxo no inicio do quadro
     fin[3, :, :][:, 0] = fin3
@@ -129,7 +119,7 @@ def collision():
     fin[8, :, :][:, 0] = fin8
 
 
-u_plot = np.sqrt(u[0, :, :]**2 + u[1, :, :]**2)
+u_plot = np.abs(u[0, :, :], u[1, :, :])
 
 # PLOT LOOP
 theFig = plt.figure(figsize=(8, 3))
@@ -145,10 +135,11 @@ objImage = plt.imshow(bImageArray, origin='lower', interpolation='none')
 
 
 def nextStep(arg):
-    for i in range(20):  #quantos calculos vão ser feitos por passo
+    for _ in range(20):  #quantos calculos vão ser feitos por passo
         streaming()
         collision()
-    u_plot = np.sqrt(u[0, :, :]**2 + u[1, :, :]**2)
+
+    u_plot = np.abs(u[0, :, :], u[1, :, :])
     fluidImage.set_array(u_plot)
 
     return (fluidImage, objImage)
