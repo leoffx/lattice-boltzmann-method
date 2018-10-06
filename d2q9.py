@@ -1,24 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation
-import time
 
 # DEFINIR:
-height = 80
+height = 60
 width = 200
-viscosity = 0.1  # viscosidade
+viscosity = 0.01  # viscosidade // proporcional ao inverso de reynolds // não diminuir muito
 omega = 1 / (3 * viscosity + 0.5)  # parametro de relaxamento
 
-u = np.zeros((2, height, width))
-u0 = 0.04  # velocidade incial
-u[0, :, :] = .04
+u0 = 0.08  # velocidade incial // não aumentar muito
 
+u = np.zeros((2, height, width))
 fin = np.zeros((9, height, width))
 feq = np.zeros((9, height, width))
 
 
 def equilibrio():
-    global feq, u, rho
+    global feq, u
 
     rho = np.sum(fin, axis=0)
     u[0, :, :] = (fin[3, :, :] + fin[5, :, :] + fin[6, :, :] - fin[4, :, :] -
@@ -70,7 +68,12 @@ fin8 = fin[8, 0, 0]
 
 # obstáculo / objeto
 obj = np.zeros((height, width), bool)
-obj[32:48, 20:50] = True
+#criar circulo:
+for i in range(height):
+    for j in range(width):
+        if (i - height / 2)**2 + (j - 50)**2 < 100:
+            obj[i, j] = True
+
 obj[0, :] = True
 obj[-1, :] = True
 objN = np.roll(obj, 1, axis=0)
