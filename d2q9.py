@@ -123,24 +123,20 @@ u_plot = np.abs(u[0, :, :], u[1, :, :])
 
 # PLOT LOOP
 theFig = plt.figure(figsize=(8, 3))
-fluidImage = plt.imshow(
-    u_plot,
-    origin='lower',
-    norm=plt.Normalize(-.1, .1),
-    cmap=plt.get_cmap('viridis'),
-    interpolation='none')
+
 bImageArray = np.zeros((height, width, 4), np.uint8)
 bImageArray[obj, 3] = 255
-objImage = plt.imshow(bImageArray, origin='lower', interpolation='none')
+objImage = plt.imshow(bImageArray)
 
 
 def nextStep(arg):
+    global rho
     for _ in range(20):  #quantos calculos vão ser feitos por passo
         streaming()
         collision()
 
     u_plot = np.abs(u[0, :, :], u[1, :, :])
-    fluidImage.set_array(u_plot)
+    fluidImage = plt.imshow(rho)
 
     return (fluidImage, objImage)
 
