@@ -40,8 +40,8 @@ for i in range(height):
         if (i - height / 2)**2 + (j - 50)**2 < 100:
             obj[i, j] = True
 
-obj[0, :] = True
-obj[-1, :] = True
+obj[1, :] = True
+obj[-2, :] = True
 objN = np.roll(obj, 1, axis=0)
 objS = np.roll(obj, -1, axis=0)
 objE = np.roll(obj, 1, axis=1)
