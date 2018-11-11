@@ -136,7 +136,7 @@ def nextStep(arg):
         collision()
 
     u_plot = np.abs(u[0, :, :], u[1, :, :])
-    fluidImage = plt.imshow(rho)
+    fluidImage = plt.imshow(u_plot)
 
     return (fluidImage, objImage)
 
