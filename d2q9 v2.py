@@ -5,17 +5,17 @@ import scipy.signal as signal
 
 # DEFINE:
 height = 150
-width = 300
-omega = 1.  # omega = 1/tau
+width = 200
+omega = .8  # omega = 1/tau
 
 u = np.zeros((2, height, width))
 fin = np.zeros((9, height, width))
 
-rho = np.ones((height, width)) + np.random.rand(height, width)
+rho = np.ones((height, width)) + .1 * np.random.rand(height, width)
 """for i in range(height):
     for j in range(width):
         if (i - height / 2)**2 + (j - 50)**2 < 100:
-            rho[i, j] += 1e-10"""
+            rho[i, j] = .2"""
 #shan-chen
 G = -6.
 wiX = [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
@@ -44,19 +44,14 @@ def streaming():
     fin[3, :, :] = np.roll(fin[3, :, :], -1, axis=1)
     fin[7, :, :] = np.roll(fin[7, :, :], -1, axis=1)
     fin[6, :, :] = np.roll(fin[6, :, :], -1, axis=1)
-
-
-z = 0
+    rho = np.sum(fin, axis=0)
 
 
 # collision step
 def collision():
-    global fin, rho, z
+    global fin, rho
 
-    if z > 0:
-        rho = np.sum(fin, axis=0)
-    z = 1
-
+    print(rho.max(), rho.min())
     ##shan-chen
     psi = 1 - np.exp(-1 * rho)
 
