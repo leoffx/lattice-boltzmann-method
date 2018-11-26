@@ -8,7 +8,7 @@ class newFluid:
     def __init__(self, height, width):
         self.heigth = height
         self.width = width
-        self.omega = 1.
+        self.omega = .8
         self.u = np.zeros((2, height, width))
         self.fin = np.zeros((9, height, width))
         self.rho = np.ones(
