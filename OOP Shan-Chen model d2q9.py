@@ -4,21 +4,27 @@ import matplotlib.animation
 import scipy.signal as signal
 
 
-class newFluid:
+class fluid:
+
+    G = -6.
+    wiX = [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
+           [1. / 36., 0., -1. / 36.]]
+
+    wiY = [[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
+           [-1. / 36., -1. / 9., -1. / 36.]]
+    omega = .8
+
     def __init__(self, height, width):
         self.heigth = height
         self.width = width
-        self.omega = .8
         self.u = np.zeros((2, height, width))
         self.fin = np.zeros((9, height, width))
-        self.rho = np.ones(
-            (height, width)) + .1 * np.random.rand(height, width)
-        self.G = -6.
-        self.wiX = [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
-                    [1. / 36., 0., -1. / 36.]]
-
-        self.wiY = [[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
-                    [-1. / 36., -1. / 9., -1. / 36.]]
+        self.rho = .2 * np.ones(
+            (height, width))  #+ .1 * np.random.rand(height, width)
+        for i in range(height):
+            for j in range(width):
+                if (i - height / 2)**2 + (j - 50)**2 < 500:
+                    self.rho[i, j] = 2.
 
     def collision(self):
         ##shan-chen
@@ -30,6 +36,8 @@ class newFluid:
         Fx = -self.G * psi * somX
         Fy = -self.G * psi * somY
 
+        print(self.rho.max(), self.rho.min())
+
         self.u[0, :, :] = (self.fin[1, :, :] + self.fin[5, :, :] +
                            self.fin[8, :, :] - self.fin[3, :, :] -
                            self.fin[7, :, :] - self.fin[6, :, :]) / self.rho
@@ -40,6 +48,8 @@ class newFluid:
         #incorporating the force
         self.u[0, :, :] += Fx / (self.omega * self.rho)
         self.u[1, :, :] += Fy / (self.omega * self.rho)
+
+        self.u[0, :, :] += .0005 / (self.omega * self.rho)
 
         u2 = self.u[0, :, :]**2 + self.u[1, :, :]**2
         uxuy = self.u[0, :, :] * self.u[1, :, :]
@@ -96,7 +106,7 @@ class newFluid:
         self.rho = np.sum(self.fin, axis=0)
 
 
-fluid = newFluid(150, 300)
+fluid = fluid(150, 300)
 
 # PLOT LOOP
 theFig = plt.figure(figsize=(8, 3))
@@ -115,4 +125,3 @@ def nextStep(arg):
 animate = matplotlib.animation.FuncAnimation(
     theFig, nextStep, interval=1, blit=True)
 plt.show()
-
