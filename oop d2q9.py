@@ -4,7 +4,7 @@ import matplotlib.animation
 import scipy.signal as signal
 
 
-class fluid:
+class newFluid:
     def __init__(self, height, width):
         self.heigth = height
         self.width = width
@@ -96,7 +96,7 @@ class fluid:
         self.rho = np.sum(self.fin, axis=0)
 
 
-fluid = fluid(150, 300)
+fluid = newFluid(150, 300)
 
 # PLOT LOOP
 theFig = plt.figure(figsize=(8, 3))
