@@ -19,12 +19,9 @@ class newFluid:
         self.width = width
         self.u = np.zeros((2, height, width))
         self.fin = np.zeros((9, height, width))
-        self.rho = .2 * np.ones(
-            (height, width))  #+ .1 * np.random.rand(height, width)
-        for i in range(height):
-            for j in range(width):
-                if (i - height / 2)**2 + (j - 50)**2 < 500:
-                    self.rho[i, j] = 2.
+        self.rho = np.ones(
+            (height, width)) + .1 * np.random.rand(height, width)
+        
 
     def collision(self):
         ##shan-chen
@@ -49,7 +46,6 @@ class newFluid:
         self.u[0, :, :] += Fx / (self.omega * self.rho)
         self.u[1, :, :] += Fy / (self.omega * self.rho)
 
-        self.u[0, :, :] += .0005 / (self.omega * self.rho)
 
         u2 = self.u[0, :, :]**2 + self.u[1, :, :]**2
         uxuy = self.u[0, :, :] * self.u[1, :, :]
