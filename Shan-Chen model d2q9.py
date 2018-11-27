@@ -32,8 +32,8 @@ class newFluid:
 
         Fx = -self.G * psi * somX
         Fy = -self.G * psi * somY
-
-        print(self.rho.max(), self.rho.min())
+        ###
+        
 
         self.u[0, :, :] = (self.fin[1, :, :] + self.fin[5, :, :] +
                            self.fin[8, :, :] - self.fin[3, :, :] -
