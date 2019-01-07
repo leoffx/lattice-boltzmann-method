@@ -7,18 +7,22 @@ import scipy.signal as signal
 class newFluid:
 
     G = -6.
+
+    #filters for the SC force calculation
     wiX = [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
            [1. / 36., 0., -1. / 36.]]
 
     wiY = [[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
            [-1. / 36., -1. / 9., -1. / 36.]]
-    omega = .8
+    #####
+    omega = 1.
 
     def __init__(self, height, width):
         self.heigth = height
         self.width = width
         self.u = np.zeros((2, height, width))
         self.fin = np.zeros((9, height, width))
+        #random initialization of the density
         self.rho = np.ones(
             (height, width)) + .1 * np.random.rand(height, width)
         
@@ -32,7 +36,7 @@ class newFluid:
 
         Fx = -self.G * psi * somX
         Fy = -self.G * psi * somY
-        ###
+        #####
         
 
         self.u[0, :, :] = (self.fin[1, :, :] + self.fin[5, :, :] +
@@ -45,7 +49,7 @@ class newFluid:
         #incorporating the force
         self.u[0, :, :] += Fx / (self.omega * self.rho)
         self.u[1, :, :] += Fy / (self.omega * self.rho)
-
+        #####
 
         u2 = self.u[0, :, :]**2 + self.u[1, :, :]**2
         uxuy = self.u[0, :, :] * self.u[1, :, :]
