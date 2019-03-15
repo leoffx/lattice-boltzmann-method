@@ -1,0 +1,194 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation
+import scipy.ndimage.filters as filters
+
+
+class fluid:
+
+    G = -6.
+    wiX = np.array([[[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
+                     [1. / 36., 0., -1. / 36.]],
+                    [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
+                     [1. / 36., 0., -1. / 36.]],
+                    [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.],
+                     [1. / 36., 0., -1. / 36.]]])
+
+    wiY = np.array([[[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
+                     [-1. / 36., -1. / 9., -1. / 36.]],
+                    [[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
+                     [-1. / 36., -1. / 9., -1. / 36.]],
+                    [[1. / 36., 1. / 9., 1. / 36.], [0, 0, 0],
+                     [-1. / 36., -1. / 9., -1. / 36.]]])
+
+    wiZ = np.array([[[-1. / 36., -1. / 36., -1. / 36.], [-1. / 9., -1. / 9., -1. / 9.],[-1. / 36., -1. / 36., -1. / 36.]],
+                    [[0, 0, 0], [0, 0, 0],[0, 0, 0]],
+                    [[1. / 36., 1. / 36., 1. / 36.], [1. / 9., 1. / 9., 1. / 9.],[1. / 36., 1. / 36., 1. / 36.]]])
+    omega = 1.
+
+    def __init__(self, height, width, depth):
+        self.heigth = height
+        self.width = width
+        self.depth = depth
+        self.u = np.zeros((3, height, width, depth))
+        self.fin = np.zeros((15, height, width, depth))
+        self.rho = np.ones(
+            (height, width,
+             depth)) + 1e-10 * np.random.rand(height, width, depth)
+        """ for i in range(height):
+            for j in range(width):
+                for k in range(depth):
+                    if (i - height / 2)**2 + (j - width / 2)**2 + (k - depth/2) < 100:
+                        self.rho[i, j, k] = 2.7 """
+
+    def collision(self):
+        ##shan-chen
+
+        psi = 1 - np.exp(-1 * self.rho)
+        somX = filters.convolve(psi, self.wiX, mode='wrap')
+        somY = filters.convolve(psi, self.wiY, mode='wrap')
+        somZ = filters.convolve(psi, self.wiZ, mode='wrap')
+        
+
+        Fx = -self.G * psi * somX
+        Fy = -self.G * psi * somY
+        Fz = -self.G * psi * somZ
+
+        self.u[0, :, :, :] = (
+            (self.fin[1, :, :, :] - self.fin[2, :, :, :]) +
+            (self.fin[7, :, :, :] - self.fin[8, :, :, :]) +
+            (self.fin[9, :, :, :] - self.fin[10, :, :, :]) +
+            (self.fin[11, :, :, :] - self.fin[12, :, :, :]) +
+            (self.fin[13, :, :, :] - self.fin[14, :, :, :])) / self.rho
+
+        self.u[1, :, :, :] = (
+            (self.fin[3, :, :, :] - self.fin[4, :, :, :]) +
+            (self.fin[7, :, :, :] - self.fin[8, :, :, :]) +
+            (self.fin[9, :, :, :] - self.fin[10, :, :, :]) +
+            (self.fin[12, :, :, :] - self.fin[11, :, :, :]) +
+            (self.fin[14, :, :, :] - self.fin[13, :, :, :])) / self.rho
+
+        self.u[2, :, :, :] = (
+            (self.fin[5, :, :, :] - self.fin[6, :, :, :]) +
+            (self.fin[7, :, :, :] - self.fin[8, :, :, :]) +
+            (self.fin[10, :, :, :] - self.fin[9, :, :, :]) +
+            (self.fin[11, :, :, :] - self.fin[12, :, :, :]) +
+            (self.fin[14, :, :, :] - self.fin[13, :, :, :])) / self.rho
+
+        #incorporating the force
+        self.u[0, :, :, :] += Fx / (self.omega * self.rho)
+        self.u[1, :, :, :] += Fy / (self.omega * self.rho)
+        self.u[2, :, :, :] += Fz / (self.omega * self.rho)
+        ######
+
+        square = 1.5 * (self.u[0, :, :, :] * self.u[0, :, :, :] +
+                        self.u[1, :, :, :] * self.u[1, :, :, :] +
+                        self.u[2, :, :, :] * self.u[2, :, :, :])
+
+        self.fin[0, :, :, :] = (2.0 / 9) * self.rho * (1.0 - square)
+
+        self.fin[1, :, :, :] = (1.0 / 9) * self.rho * (
+            1.0 + 3.0 * self.u[0, :, :, :] +
+            4.5 * self.u[0, :, :, :] * self.u[0, :, :, :] - square)
+        self.fin[2, :, :, :] = self.fin[1, :, :, :] - 6.0 * (
+            1.0 / 9) * self.rho * self.u[0, :, :, :]
+
+        self.fin[3, :, :, :] = (1.0 / 9) * self.rho * (
+            1.0 + 3.0 * self.u[1, :, :, :] +
+            4.5 * self.u[1, :, :, :] * self.u[1, :, :, :] - square)
+        self.fin[4, :, :, :] = self.fin[3, :, :, :] - 6.0 * (
+            1.0 / 9) * self.rho * self.u[1, :, :, :]
+
+        self.fin[5, :, :, :] = (1.0 / 9) * self.rho * (
+            1.0 + 3.0 * self.u[2, :, :, :] +
+            4.5 * self.u[2, :, :, :] * self.u[2, :, :, :] - square)
+        self.fin[6, :, :, :] = self.fin[5, :, :, :] - 6.0 * (
+            1.0 / 9) * self.rho * self.u[2, :, :, :]
+
+        product = self.u[0, :, :, :] + self.u[1, :, :, :] + self.u[2, :, :, :]
+        self.fin[7, :, :, :] = (1.0 / 72) * self.rho * (
+            1.0 + 3.0 * product + 4.5 * product * product - square)
+        self.fin[8, :, :, :] = self.fin[7, :, :, :] - 6.0 * (
+            1.0 / 72) * self.rho * product
+
+        product = self.u[0, :, :, :] + self.u[1, :, :, :] - self.u[2, :, :, :]
+        self.fin[9, :, :, :] = (1.0 / 72) * self.rho * (
+            1.0 + 3.0 * product + 4.5 * product * product - square)
+        self.fin[10, :, :, :] = self.fin[9, :, :, :] - 6.0 * (
+            1.0 / 72) * self.rho * product
+
+        product = self.u[0, :, :, :] - self.u[1, :, :, :] + self.u[2, :, :, :]
+        self.fin[11, :, :, :] = (1.0 / 72) * self.rho * (
+            1.0 + 3.0 * product + 4.5 * product * product - square)
+        self.fin[12, :, :, :] = self.fin[11, :, :, :] - 6.0 * (
+            1.0 / 72) * self.rho * product
+
+        product = self.u[0, :, :, :] - self.u[1, :, :, :] - self.u[2, :, :, :]
+        self.fin[13, :, :, :] = (1.0 / 72) * self.rho * (
+            1.0 + 3.0 * product + 4.5 * product * product - square)
+        self.fin[14, :, :, :] = self.fin[13, :, :, :] - 6.0 * (
+            1.0 / 72) * self.rho * product
+
+    def streaming(self):
+
+        self.fin[1, :, :, :] = np.roll(self.fin[1, :, :, :], 1, axis=1)
+        self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=1)
+        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], 1, axis=1)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=1)
+        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], 1, axis=1)
+
+        self.fin[2, :, :, :] = np.roll(self.fin[2, :, :, :], -1, axis=1)
+        self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=1)
+        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], -1, axis=1)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=1)
+        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], -1, axis=1)
+
+        self.fin[3, :, :, :] = np.roll(self.fin[3, :, :, :], 1, axis=0)
+        self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=0)
+        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], 1, axis=0)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], 1, axis=0)
+        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], 1, axis=0)
+
+        self.fin[4, :, :, :] = np.roll(self.fin[4, :, :, :], -1, axis=0)
+        self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=0)
+        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], -1, axis=0)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], -1, axis=0)
+        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], -1, axis=0)
+
+        self.fin[5, :, :, :] = np.roll(self.fin[5, :, :, :], 1, axis=2)
+        self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=2)
+        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], 1, axis=2)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=2)
+        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], 1, axis=2)
+
+        self.fin[6, :, :, :] = np.roll(self.fin[6, :, :, :], -1, axis=2)
+        self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=2)
+        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], -1, axis=2)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=2)
+        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], -1, axis=2)
+
+        self.rho = np.sum(self.fin, axis=0)
+
+
+newFluid = fluid(128, 128, 32)
+
+# PLOT LOOP
+
+
+theFig = plt.figure()
+#z = 0
+
+def nextStep(arg):
+    #global z
+    for _ in range(5):
+        newFluid.collision()
+        newFluid.streaming()
+    #z += 1
+    fluidImage = plt.imshow(newFluid.rho[:, :, 16])
+
+    return (fluidImage, )
+
+
+animate = matplotlib.animation.FuncAnimation(
+    theFig, nextStep, interval=1000, blit=True)
+plt.show()
