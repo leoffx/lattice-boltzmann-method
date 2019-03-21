@@ -6,7 +6,7 @@ import scipy.ndimage.filters as filters
 
 class fluid:
 
-    G = -2.5
+    G = -2.2
     wiX = 3*np.array([[[1. / 36., 0., -1. / 36.], [1. / 36., 0, -1. / 36.],
                      [1. / 36., 0., -1. / 36.]],
                     [[1. / 36., 0., -1. / 36.], [1. / 9., 0, -1. / 9.], [1. / 36., 0., -1. / 36.]],
@@ -19,7 +19,7 @@ class fluid:
                     [[1. / 36., 1. / 36., 1. / 36.], [0, 0, 0],
                      [-1. / 36., -1. / 36., -1. / 36.]]])
 
-    wiZ = 3*np.array([[[-1. / 36., -1. / 36., -1. / 36.], [-1. / 36., -1. / 9., -1. / 36.],
+    wiZ = -3*np.array([[[-1. / 36., -1. / 36., -1. / 36.], [-1. / 36., -1. / 9., -1. / 36.],
                      [-1. / 36., -1. / 36., -1. / 36.]], [[0, 0, 0], [0, 0, 0],
                                                 [0, 0, 0]],
                     [[1. / 36., 1. / 36., 1. / 36.], [1. / 36., 1. / 9.,1. / 36.],
@@ -37,14 +37,16 @@ class fluid:
         self.depth = depth
         self.u = np.zeros((3, height, width, depth))
         self.fin = np.zeros((15, height, width, depth))
-        self.rho = np.ones(
+        self.rho = .278*np.ones(
             (height, width,
-             depth)) + .1 * np.random.rand(height, width, depth)
-        """for i in range(height):
+             depth)) #+ .1 * np.random.rand(height, width, depth)
+        for i in range(height):
             for j in range(width):
                 for k in range(depth):
-                    if (i - height / 2)**2 + (j - width / 2)**2 + (k - depth/2) < 100:
-                        self.rho[i, j, k] = 2.7"""
+                    if (i - height / 2)**2 + (j - width / 2 - 16.)**2 + (k - depth/2)**2 < 200:
+                        self.rho[i, j, k] = 4.97
+                    if (i - height / 2)**2 + (j - width / 2 + 16.)**2 + (k - depth/2)**2 < 200:
+                        self.rho[i, j, k] = 4.97
 
     def collision(self):
         ##shan-chen
@@ -92,108 +94,88 @@ class fluid:
                         self.u[1, :, :, :] * self.u[1, :, :, :] +
                         self.u[2, :, :, :] * self.u[2, :, :, :])
 
-        self.fin[0, :, :, :] = (2. / 9) * self.rho * (1. - square)
+        self.fin[0, :, :, :] = self.fin[0, :, :] * (1. - self.omega) + self.omega * (2. / 9) * self.rho * (1. - square)
 
-        self.fin[1, :, :, :] = (1. / 9) * self.rho * (
-            1. + 3. * self.u[0, :, :, :] +
-            4.5 * self.u[0, :, :, :] * self.u[0, :, :, :] - square)
-        self.fin[2, :, :, :] = self.fin[1, :, :, :] - 6. * (
-            1. / 9) * self.rho * self.u[0, :, :, :]
+        self.fin[1, :, :, :] = self.fin[1, :, :] * (1. - self.omega) + self.omega * ((1. / 9) * self.rho * (1. + 3. * self.u[0, :, :, :] + 4.5 * self.u[0, :, :, :] * self.u[0, :, :, :] - square))
+        self.fin[2, :, :, :] =  self.fin[2, :, :] * (1. - self.omega) + self.omega * (self.fin[1, :, :, :] - 6. * (1. / 9) * self.rho * self.u[0, :, :, :])
 
-        self.fin[3, :, :, :] = (1. / 9) * self.rho * (
-            1. + 3. * self.u[1, :, :, :] +
-            4.5 * self.u[1, :, :, :] * self.u[1, :, :, :] - square)
-        self.fin[4, :, :, :] = self.fin[3, :, :, :] - 6. * (
-            1. / 9) * self.rho * self.u[1, :, :, :]
+        self.fin[3, :, :, :] = self.fin[3, :, :] * (1. - self.omega) + self.omega * ((1. / 9) * self.rho * (1. + 3. * self.u[1, :, :, :] +4.5 * self.u[1, :, :, :] * self.u[1, :, :, :] - square))
+        self.fin[4, :, :, :] =  self.fin[4, :, :] * (1. - self.omega) + self.omega * (self.fin[3, :, :, :] - 6. * (1. / 9) * self.rho * self.u[1, :, :, :])
 
-        self.fin[5, :, :, :] = (1. / 9) * self.rho * (
-            1. + 3. * self.u[2, :, :, :] +
-            4.5 * self.u[2, :, :, :] * self.u[2, :, :, :] - square)
-        self.fin[6, :, :, :] = self.fin[5, :, :, :] - 6. * (
-            1. / 9) * self.rho * self.u[2, :, :, :]
+        self.fin[5, :, :, :] =  self.fin[5, :, :] * (1. - self.omega) + self.omega * ((1. / 9) * self.rho * (1. + 3. * self.u[2, :, :, :] + 4.5 * self.u[2, :, :, :] * self.u[2, :, :, :] - square))
+        self.fin[6, :, :, :] =  self.fin[6, :, :] * (1. - self.omega) + self.omega * (self.fin[5, :, :, :] - 6. * (1. / 9) * self.rho * self.u[2, :, :, :])
 
         product = self.u[0, :, :, :] + self.u[1, :, :, :] + self.u[2, :, :, :]
-        self.fin[7, :, :, :] = (1. / 72) * self.rho * (
-            1. + 3. * product + 4.5 * product * product - square)
-        self.fin[8, :, :, :] = self.fin[7, :, :, :] - 6. * (
-            1. / 72) * self.rho * product
+        self.fin[7, :, :, :] = self.fin[7, :, :] * (1. - self.omega) + self.omega * ((1. / 72) * self.rho * (1. + 3. * product + 4.5 * product * product - square))
+        self.fin[8, :, :, :] =  self.fin[8, :, :] * (1. - self.omega) + self.omega * (self.fin[7, :, :, :] - 6. * (1. / 72) * self.rho * product)
 
         product = self.u[0, :, :, :] + self.u[1, :, :, :] - self.u[2, :, :, :]
-        self.fin[9, :, :, :] = (1. / 72) * self.rho * (
-            1. + 3. * product + 4.5 * product * product - square)
-        self.fin[10, :, :, :] = self.fin[9, :, :, :] - 6. * (
-            1. / 72) * self.rho * product
+        self.fin[9, :, :, :] = self.fin[9, :, :] * (1. - self.omega) + self.omega * ((1. / 72) * self.rho * (1. + 3. * product + 4.5 * product * product - square))
+        self.fin[10, :, :, :] =  self.fin[10, :, :] * (1. - self.omega) + self.omega * (self.fin[9, :, :, :] - 6. * (1. / 72) * self.rho * product)
 
         product = self.u[0, :, :, :] - self.u[1, :, :, :] + self.u[2, :, :, :]
-        self.fin[11, :, :, :] = (1. / 72) * self.rho * (
-            1. + 3. * product + 4.5 * product * product - square)
-        self.fin[12, :, :, :] = self.fin[11, :, :, :] - 6. * (
-            1. / 72) * self.rho * product
+        self.fin[11, :, :, :] =  self.fin[11, :, :] * (1. - self.omega) + self.omega * ((1. / 72) * self.rho * (1. + 3. * product + 4.5 * product * product - square))
+        self.fin[12, :, :, :] =  self.fin[12, :, :] * (1. - self.omega) + self.omega * (self.fin[11, :, :, :] - 6. * (1. / 72) * self.rho * product)
 
         product = self.u[0, :, :, :] - self.u[1, :, :, :] - self.u[2, :, :, :]
-        self.fin[13, :, :, :] = (1. / 72) * self.rho * (
-            1. + 3. * product + 4.5 * product * product - square)
-        self.fin[14, :, :, :] = self.fin[13, :, :, :] - 6. * (
-            1. / 72) * self.rho * product
+        self.fin[13, :, :, :] =  self.fin[13, :, :] * (1. - self.omega) + self.omega * ((1. / 72) * self.rho * (1. + 3. * product + 4.5 * product * product - square))
+        self.fin[14, :, :, :] =  self.fin[14, :, :] * (1. - self.omega) + self.omega * (self.fin[13, :, :, :] - 6. * (1. / 72) * self.rho * product)
 
     def streaming(self):
+        self.fin[1, :, :, :] = np.roll(self.fin[1, :, :, :], 1, axis=2) #X
+        self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=2)
+        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], 1, axis=2)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=2)
+        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], 1, axis=2)
 
-        self.fin[1, :, :, :] = np.roll(self.fin[1, :, :, :], 1, axis=1)
+        self.fin[2, :, :, :] = np.roll(self.fin[2, :, :, :], -1, axis=2)
+        self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=2)
+        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], -1, axis=2)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=2)
+        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], -1, axis=2)
+
+        self.fin[3, :, :, :] = np.roll(self.fin[3, :, :, :], 1, axis=1) #Y
         self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=1)
         self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], 1, axis=1)
-        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=1)
-        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], 1, axis=1)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], 1, axis=1)
+        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], 1, axis=1)
 
-        self.fin[2, :, :, :] = np.roll(self.fin[2, :, :, :], -1, axis=1)
+        self.fin[4, :, :, :] = np.roll(self.fin[4, :, :, :], -1, axis=1)
         self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=1)
         self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], -1, axis=1)
-        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=1)
-        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], -1, axis=1)
-
-        self.fin[3, :, :, :] = np.roll(self.fin[3, :, :, :], 1, axis=0)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], -1, axis=1)
+        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], -1, axis=1)
+        
+        self.fin[5, :, :, :] = np.roll(self.fin[5, :, :, :], 1, axis=0) #Z
         self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=0)
-        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], 1, axis=0)
-        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], 1, axis=0)
+        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], 1, axis=0)
+        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=0)
         self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], 1, axis=0)
 
-        self.fin[4, :, :, :] = np.roll(self.fin[4, :, :, :], -1, axis=0)
+        self.fin[6, :, :, :] = np.roll(self.fin[6, :, :, :], -1, axis=0)
         self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=0)
-        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], -1, axis=0)
-        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], -1, axis=0)
+        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], -1, axis=0)
+        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=0)
         self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], -1, axis=0)
-
-        self.fin[5, :, :, :] = np.roll(self.fin[5, :, :, :], 1, axis=2)
-        self.fin[7, :, :, :] = np.roll(self.fin[7, :, :, :], 1, axis=2)
-        self.fin[10, :, :, :] = np.roll(self.fin[10, :, :, :], 1, axis=2)
-        self.fin[11, :, :, :] = np.roll(self.fin[11, :, :, :], 1, axis=2)
-        self.fin[14, :, :, :] = np.roll(self.fin[14, :, :, :], 1, axis=2)
-
-        self.fin[6, :, :, :] = np.roll(self.fin[6, :, :, :], -1, axis=2)
-        self.fin[8, :, :, :] = np.roll(self.fin[8, :, :, :], -1, axis=2)
-        self.fin[9, :, :, :] = np.roll(self.fin[9, :, :, :], -1, axis=2)
-        self.fin[12, :, :, :] = np.roll(self.fin[12, :, :, :], -1, axis=2)
-        self.fin[13, :, :, :] = np.roll(self.fin[13, :, :, :], -1, axis=2)
 
         self.rho = np.sum(self.fin, axis=0)
 
 
-newFluid = fluid(64, 64, 32)
+newFluid = fluid(128, 128, 128)
 
 # PLOT LOOP
 theFig = plt.figure()
 
-
 def nextStep(arg):
-    
-    for _ in range(3):
+    for _ in range(10):
         newFluid.collision()
         newFluid.streaming()
-    
-    fluidImage = plt.imshow(newFluid.rho[:, :, 16])
+
+    print(newFluid.rho.max(), newFluid.rho.min())
+    fluidImage = plt.imshow(newFluid.rho[:,:,64])
 
     return (fluidImage, )
 
-
 animate = matplotlib.animation.FuncAnimation(
-    theFig, nextStep, interval=10, blit=True)
+    theFig, nextStep, interval=1, blit=True)
 plt.show()
